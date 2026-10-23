@@ -1,0 +1,45 @@
+name: cleanup
+
+on:
+  schedule:
+    - cron: "37 7 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Log what would be deleted without deleting
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup
+
+env:
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+jobs:
+  ghcr:
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      # superseded cache manifests, per-arch images already copied into php/nginx, and broken leftovers
+      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+        with:
+          packages: php-base-images-cache
+          delete-untagged: true
+          delete-ghost-images: true
+          delete-partial-images: true
+          delete-orphaned-images: true
+          # in-flight builds push per-arch digests untagged until the merge job copies them
+          older-than: 1 day
+          dry-run: ${{ env.DRY_RUN }}
+      # monthly full rebuild refreshes every live cache tag, so older ones belong to lanes no longer built
+      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+        with:
+          packages: php-base-images-cache
+          delete-tags: "*"
+          older-than: 45 days
+          dry-run: ${{ env.DRY_RUN }}
