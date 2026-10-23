@@ -26,7 +26,8 @@ jobs:
       packages: write
     steps:
       # superseded cache manifests, per-arch images already copied into php/nginx, and broken leftovers
-      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+      - name: Delete obsolete images
+        uses: dataaxiom/ghcr-cleanup-action@v1.2.2
         with:
           packages: php-base-images-cache
           delete-untagged: true
@@ -37,7 +38,8 @@ jobs:
           older-than: 1 day
           dry-run: ${{ env.DRY_RUN }}
       # monthly full rebuild refreshes every live cache tag, so older ones belong to lanes no longer built
-      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+      - name: Delete stale cache tags
+        uses: dataaxiom/ghcr-cleanup-action@v1.2.2
         with:
           packages: php-base-images-cache
           delete-tags: "*"
